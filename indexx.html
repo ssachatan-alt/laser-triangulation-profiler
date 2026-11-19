@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laser Triangulation Bio-Postural &amp; Joint Angle Profiler</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            navy: {
+              850: '#102038',
+              900: '#0b1628',
+              950: '#060d18',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+    /* Custom scientific range sliders */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 999px;
+      background: #cbd5e1;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0d9488;
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+      cursor: pointer;
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.12);
+      background: #0f766e;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0d9488;
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+      cursor: pointer;
+    }
+    .canvas-grab {
+      cursor: grab;
+    }
+    .canvas-grabbing {
+      cursor: grabbing;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-teal-600 selection:text-white">
+
+  <!-- Toast / Status Notification Banner (Replaces alert) -->
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-50 hidden transform transition-all duration-300 bg-navy-900 text-white border border-teal-500/40 px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm">
+    <span class="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse"></span>
+    <span id="toastMessage">Status updated</span>
+  </div>
+
+  <!-- Top Academic Instrumentation Header -->
+  <header class="bg-navy-900 text-white border-b border-slate-800 shadow-md">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-3.5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <div class="flex items-start sm:items-center gap-3.5">
+        <!-- Optical Triangulation Emblem SVG -->
+        <div class="w-11 h-11 rounded-xl bg-teal-500/15 border border-teal-400/30 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+          <svg class="w-6 h-6 text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="5" cy="18" r="2.5" fill="currentColor" />
+            <circle cx="11" cy="11" r="2.5" />
+            <path d="M5 18L11 11L20 11" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M11 11L20 5" stroke="#f43f5e" stroke-width="2" stroke-dasharray="2 2" />
+            <line x1="20" y1="3" x2="20" y2="21" stroke="#94a3b8" stroke-width="1.5" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-base sm:text-lg md:text-xl font-bold tracking-tight text-white">
+              Laser Triangulation Bio-Postural &amp; Joint Angle Profiler
+            </h1>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-teal-500/20 text-teal-300 border border-teal-400/30">
+              SRM IST • Physics &amp; BME Prototype
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-300 mt-0.5">
+            Non-Contact Optical Triangulation &amp; Gaussian Spot Divergence Simulator (&lambda; = 650 nm)
+          </p>
+        </div>
+      </div>
+
+      <!-- Anatomical Joint Mode Selector -->
+      <div class="flex items-center gap-2 self-start lg:self-auto bg-navy-950/80 p-1.5 rounded-xl border border-slate-700/80">
+        <span class="text-xs font-medium text-slate-400 px-2 hidden sm:inline">Anatomical Chain:</span>
+        <button id="btnElbowMode" type="button" onclick="setJointMode('elbow')"
+          class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-teal-600 text-white shadow-sm">
+          Elbow Joint Mode
+        </button>
+        <button id="btnKneeMode" type="button" onclick="setJointMode('knee')"
+          class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white hover:bg-slate-800">
+          Knee Joint Mode
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace Grid -->
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 space-y-4">
+
+    <!-- Upper Section: Interactive Canvas (Left/Center) + Controls & Live Telemetry (Right) -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 items-stretch">
+
+      <!-- Left/Center: Dual-View Optical Bench & Zoomed Millimeter Target Canvas -->
+      <section class="xl:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+        <!-- Canvas Toolbar -->
+        <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+            <h2 class="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wide">
+              Optical Bench &amp; Millimeter Target Simulation
+            </h2>
+            <span class="hidden md:inline-block text-xs text-slate-500 ml-1">
+              (Drag the flexure arm directly or use controls)
+            </span>
+          </div>
+
+          <!-- Centroid Divergence Correction Toggle -->
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
+            <input id="toggleCentroid" type="checkbox" checked class="sr-only peer" onchange="drawSimulation()" />
+            <div class="w-8 h-4.5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:bg-teal-600 relative transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:after:translate-x-3.5"></div>
+            <span class="text-xs font-semibold text-slate-700">Centroid Divergence Correction</span>
+          </label>
+        </div>
+
+        <!-- Responsive Interactive HTML5 Canvas Container -->
+        <div id="canvasWrapper" class="relative w-full flex-1 min-h-[370px] sm:min-h-[430px] bg-slate-950">
+          <canvas id="simCanvas" class="block w-full h-full canvas-grab"></canvas>
+        </div>
+
+        <!-- Bottom Canvas Legend Strip -->
+        <div class="px-4 py-2 bg-slate-900 text-slate-300 text-[11px] sm:text-xs flex flex-wrap items-center justify-between gap-2 border-t border-slate-800">
+          <div class="flex flex-wrap items-center gap-4">
+            <span class="flex items-center gap-1.5">
+              <span class="inline-block w-3 h-0.5 bg-rose-500 shadow-[0_0_6px_#f43f5e]"></span>
+              650 nm Coherent Laser Beam
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="inline-block w-2.5 h-2.5 rounded-full border border-amber-400 bg-amber-400/20"></span>
+              Anatomical Landmarks (A, B, C)
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="inline-block w-3 h-0.5 border-t border-dashed border-teal-400"></span>
+              Triangulation Dimensions (D, y, &theta;)
+            </span>
+          </div>
+          <span class="font-mono text-teal-400">tan(&theta;) = y / D</span>
+        </div>
+      </section>
+
+      <!-- Right Panel: Interactive Controls & Live Mathematical Telemetry -->
+      <aside class="xl:col-span-4 flex flex-col gap-4">
+
+        <!-- Control Parameters Card -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wide">
+              Experimental Parameters
+            </h2>
+            <button id="btnAutoSweep" type="button" onclick="toggleAutoSweep()"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-navy-900 text-white hover:bg-navy-850 transition-colors shadow-xs">
+              <svg id="sweepIconPlay" class="w-3.5 h-3.5 text-teal-400" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <svg id="sweepIconPause" class="w-3.5 h-3.5 text-amber-400 hidden" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+              </svg>
+              <span id="sweepLabel">Auto-Flexion Sweep</span>
+            </button>
+          </div>
+
+          <!-- 1. Joint Flexion Angle Slider -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="sliderTheta" class="text-xs font-semibold text-slate-700">
+                Joint Flexion Angle (&theta;)
+              </label>
+              <span id="valTheta" class="font-mono text-sm font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
+                10.0°
+              </span>
+            </div>
+            <input id="sliderTheta" type="range" min="0" max="25" step="0.5" value="10" class="w-full" oninput="onParamChange()" />
+            <!-- Quick Angle Preset Buttons -->
+            <div class="flex items-center justify-between gap-1.5 pt-1">
+              <span class="text-[11px] text-slate-500 font-medium">Presets:</span>
+              <div class="flex gap-1.5">
+                <button type="button" onclick="setThetaPreset(0)" class="preset-btn px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-slate-100 hover:bg-teal-600 hover:text-white text-slate-700 transition-colors">0°</button>
+                <button type="button" onclick="setThetaPreset(5)" class="preset-btn px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-slate-100 hover:bg-teal-600 hover:text-white text-slate-700 transition-colors">5°</button>
+                <button type="button" onclick="setThetaPreset(10)" class="preset-btn px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-slate-100 hover:bg-teal-600 hover:text-white text-slate-700 transition-colors">10°</button>
+                <button type="button" onclick="setThetaPreset(15)" class="preset-btn px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-slate-100 hover:bg-teal-600 hover:text-white text-slate-700 transition-colors">15°</button>
+                <button type="button" onclick="setThetaPreset(20)" class="preset-btn px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-slate-100 hover:bg-teal-600 hover:text-white text-slate-700 transition-colors">20°</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Target Screen Distance Slider -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="sliderDist" class="text-xs font-semibold text-slate-700">
+                Target Screen Distance (D)
+              </label>
+              <span id="valDist" class="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                100 cm (1.00 m)
+              </span>
+            </div>
+            <input id="sliderDist" type="range" min="50" max="150" step="1" value="100" class="w-full" oninput="onParamChange()" />
+            <div class="flex justify-between text-[10px] font-mono text-slate-400">
+              <span>50 cm</span>
+              <span>100 cm (Standard)</span>
+              <span>150 cm</span>
+            </div>
+          </div>
+
+          <!-- 3. Initial Beam Waist Slider -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="sliderWaist" class="text-xs font-semibold text-slate-700">
+                Initial Beam Waist (w<sub>0</sub>) at &lambda; = 650 nm
+              </label>
+              <span id="valWaist" class="font-mono text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                0.80 mm
+              </span>
+            </div>
+            <input id="sliderWaist" type="range" min="0.50" max="1.50" step="0.05" value="0.80" class="w-full" oninput="onParamChange()" />
+            <div class="flex justify-between text-[10px] font-mono text-slate-400">
+              <span>0.50 mm</span>
+              <span>0.80 mm</span>
+              <span>1.50 mm</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Mathematical Telemetry Readouts -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex-1 flex flex-col justify-between space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wide">
+              Live Optical &amp; Vector Telemetry
+            </h2>
+            <span class="text-[11px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold">
+              REAL-TIME
+            </span>
+          </div>
+
+          <!-- 2x2 Metric Grid -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="bg-slate-50 border border-slate-200/90 rounded-xl p-2.5">
+              <div class="text-[11px] font-medium text-slate-500">Vertical Spot Shift (y)</div>
+              <div id="readoutShiftCm" class="font-mono text-base font-bold text-slate-900 mt-0.5">17.63 cm</div>
+              <div id="readoutShiftMm" class="font-mono text-[11px] text-teal-700">176.3 mm</div>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200/90 rounded-xl p-2.5">
+              <div class="text-[11px] font-medium text-slate-500">Triangulated Angle (&theta;<sub>calc</sub>)</div>
+              <div id="readoutCalcAngle" class="font-mono text-base font-bold text-teal-700 mt-0.5">10.00°</div>
+              <div class="font-mono text-[11px] text-slate-500">arctan(y / D)</div>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200/90 rounded-xl p-2.5">
+              <div class="text-[11px] font-medium text-slate-500">Slant Optical Path (z)</div>
+              <div id="readoutSlantZ" class="font-mono text-base font-bold text-slate-900 mt-0.5">101.54 cm</div>
+              <div class="font-mono text-[11px] text-slate-500">&radic;(D&sup2; + y&sup2;)</div>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200/90 rounded-xl p-2.5">
+              <div class="text-[11px] font-medium text-slate-500">Expanded Spot Radius w(z)</div>
+              <div id="readoutSpotRadius" class="font-mono text-base font-bold text-rose-600 mt-0.5">0.84 mm</div>
+              <div id="readoutRayleigh" class="font-mono text-[11px] text-slate-500">z<sub>R</sub> = 309.3 cm</div>
+            </div>
+          </div>
+
+          <!-- 3D Anatomical Vector Dot-Product Verification Box -->
+          <div class="bg-navy-900 text-slate-200 rounded-xl p-3 border border-slate-800 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-teal-400">
+                3D Anatomical Vector Verification
+              </span>
+              <span id="readoutIncludedAngle" class="font-mono text-xs font-bold text-white bg-teal-600/30 border border-teal-400/40 px-2 py-0.5 rounded">
+                Included: 170.0°
+              </span>
+            </div>
+            <div id="readoutCoords" class="font-mono text-[11px] text-slate-300 leading-relaxed">
+              A(0.0, 25.0, 0) • B(0.0, 0.0, 0) • C(24.6, -4.3, 0) cm
+            </div>
+            <div id="readoutDotFormula" class="font-mono text-[11px] text-amber-300 border-t border-slate-800 pt-1">
+              &theta;<sub>flex</sub> = 180° &minus; cos<sup>&minus;1</sup>[(BA&middot;BC)/(|BA||BC|)] = 10.00°
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Bottom Section: Observation Log & Physics Reference Tabs -->
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <!-- Tab Navigation Bar -->
+      <div class="bg-slate-50 border-b border-slate-200 px-4 pt-2.5 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap gap-1.5" role="tablist">
+          <button id="tabBtn1" type="button" onclick="switchTab(1)"
+            class="px-4 py-2 rounded-t-xl text-xs sm:text-sm font-bold border-t border-x border-slate-200 bg-white text-teal-700 -mb-px transition-colors">
+            1. Experimental Data Logger
+          </button>
+          <button id="tabBtn2" type="button" onclick="switchTab(2)"
+            class="px-4 py-2 rounded-t-xl text-xs sm:text-sm font-semibold border-t border-x border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors">
+            2. Theoretical Principles &amp; Equations
+          </button>
+          <button id="tabBtn3" type="button" onclick="switchTab(3)"
+            class="px-4 py-2 rounded-t-xl text-xs sm:text-sm font-semibold border-t border-x border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors">
+            3. Biomedical &amp; Ergonomic Applications
+          </button>
+        </div>
+
+        <!-- Quick Logger Action Buttons -->
+        <div id="loggerActions" class="flex flex-wrap items-center gap-2 pb-2">
+          <button type="button" onclick="recordCurrentTrial()"
+            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-xs transition-colors">
+            <span>+ Record Trial</span>
+          </button>
+          <button type="button" onclick="loadSampleCalibrationTrials()"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 hover:bg-slate-300 text-slate-800 transition-colors">
+            Load Sample Calibration
+          </button>
+          <button type="button" onclick="copyTableToClipboard()"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-navy-900 hover:bg-navy-850 text-white transition-colors">
+            Copy Table for Report
+          </button>
+          <button type="button" onclick="clearTrials()"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors">
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 1 Content: Experimental Data Logger -->
+      <div id="tabPanel1" class="p-4">
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table id="trialsTable" class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 border-b border-slate-200 font-semibold">
+                <th class="py-2.5 px-3">Trial #</th>
+                <th class="py-2.5 px-3">Joint Mode</th>
+                <th class="py-2.5 px-3">Reference Angle (&theta;<sub>ref</sub>)</th>
+                <th class="py-2.5 px-3">Screen Distance (D)</th>
+                <th class="py-2.5 px-3">Spot Shift (y)</th>
+                <th class="py-2.5 px-3">Spot Radius w(z)</th>
+                <th class="py-2.5 px-3">Computed Angle (&theta;<sub>calc</sub>)</th>
+                <th class="py-2.5 px-3">Difference (&Delta;&theta;)</th>
+              </tr>
+            </thead>
+            <tbody id="trialsTbody" class="divide-y divide-slate-200 font-mono text-xs">
+              <!-- Rows injected dynamically -->
+            </tbody>
+          </table>
+        </div>
+        <p class="text-xs text-slate-500 mt-2.5">
+          Note: Centroid divergence correction tracks the geometric center of the Gaussian spot at distance z = &radic;(D&sup2; + y&sup2;), eliminating radial beam-expansion bias.
+        </p>
+      </div>
+
+      <!-- Tab 2 Content: Theoretical Principles & Equations -->
+      <div id="tabPanel2" class="p-4 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Principle 1 -->
+          <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-2">
+            <div class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-teal-100 text-teal-800">
+              1. Optical Triangulation Geometry
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg p-2.5 font-mono text-sm font-bold text-center text-navy-900">
+              tan(&theta;) = y / D &nbsp;&rArr;&nbsp; &theta; = tan<sup>&minus;1</sup>(y / D)
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              A 650 nm laser emitter mounted on the moving distal flexure arm projects onto a vertical millimeter grid at fixed horizontal distance <strong>D</strong>. Angular joint flexion <strong>&theta;</strong> produces a vertical spot displacement <strong>y</strong>, enabling non-contact angular measurement without placing mechanical instruments across the joint.
+            </p>
+          </div>
+
+          <!-- Principle 2 -->
+          <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-2">
+            <div class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-rose-100 text-rose-800">
+              2. Gaussian Spot Divergence
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg p-2.5 font-mono text-sm font-bold text-center text-navy-900">
+              w(z) = w<sub>0</sub> &radic;[ 1 + (z / z<sub>R</sub>)<sup>2</sup> ]
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              As the optical slant path <strong>z = &radic;(D&sup2; + y&sup2;)</strong> increases, the laser spot radius <strong>w(z)</strong> expands relative to the initial beam waist <strong>w<sub>0</sub></strong> and Rayleigh range <strong>z<sub>R</sub> = &pi;w<sub>0</sub><sup>2</sup>/&lambda;</strong>. Measuring from the spot’s geometric centroid removes radial expansion error.
+            </p>
+          </div>
+
+          <!-- Principle 3 -->
+          <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-2">
+            <div class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-indigo-100 text-indigo-800">
+              3. Biomechanical Vector Dot Product
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg p-2.5 font-mono text-sm font-bold text-center text-navy-900">
+              &theta;<sub>inc</sub> = cos<sup>&minus;1</sup>[ (BA &middot; BC) / (|BA| |BC|) ]
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Representing proximal landmark <strong>A</strong>, joint center <strong>B</strong>, and distal landmark <strong>C</strong> in calibrated coordinates yields segment vectors <strong>BA</strong> and <strong>BC</strong>. Their normalized dot product computes the included anatomical angle and flexion angle (&theta;<sub>flex</sub> = 180° &minus; &theta;<sub>inc</sub>).
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3 Content: Biomedical & Ergonomic Applications -->
+      <div id="tabPanel3" class="p-4 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-1.5">
+            <h3 class="text-sm font-bold text-navy-900">Physical Therapy &amp; Rehabilitation Monitoring</h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Enables non-contact tracking of elbow and knee range-of-motion (ROM) during post-injury recovery exercises. Eliminates physical pressure from contact goniometers on sensitive or swollen joints while giving immediate visual feedback on a grid target.
+            </p>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-1.5">
+            <h3 class="text-sm font-bold text-navy-900">Rural School Ergonomic Posture Screening</h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Provides an accessible, portable optical setup for screening student seating alignment, forward head tilt, and limb flexion angles in rural schools and community health camps where multi-camera clinical motion labs are unavailable.
+            </p>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-1.5">
+            <h3 class="text-sm font-bold text-navy-900">System Advantages &amp; Operational Scope</h3>
+            <ul class="text-xs text-slate-600 list-disc pl-4 space-y-1">
+              <li>Non-contact optical measurement with clear trigonometric geometry.</li>
+              <li>Centroid correction maintains accuracy despite Gaussian beam divergence.</li>
+              <li>Educational prototype intended for supervised biomechanics demonstration.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // =========================================================================
+    // SIMULATION STATE & PHYSICAL CONSTANTS
+    // =========================================================================
+    const LAMBDA_CM = 650e-7; // 650 nm red laser wavelength in cm (6.5e-5 cm)
+    const SEGMENT_LEN_CM = 25.0; // Anatomical segment length (A-B and B-C) in cm
+
+    const state = {
+      jointMode: 'elbow',      // 'elbow' | 'knee'
+      thetaDeg: 10.0,          // Joint flexion angle in degrees (0 to 25)
+      distCm: 100.0,           // Horizontal screen distance D in cm (50 to 150)
+      waistMm: 0.80,           // Initial beam waist w0 in mm (0.50 to 1.50)
+      centroidCorrection: true,
+      autoSweep: false,
+      sweepDir: 1,
+      lastFrameTime: 0,
+      isDraggingArm: false,
+      pivotPx: { x: 0, y: 0 }, // Updated dynamically on render for mouse/touch dragging
+      trials: []
+    };
+
+    // DOM Element References
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const canvasWrapper = document.getElementById('canvasWrapper');
+
+    // =========================================================================
+    // PHYSICS & VECTOR CALCULATIONS
+    // =========================================================================
+    function computePhysics() {
+      const thetaRad = (state.thetaDeg * Math.PI) / 180;
+      const D = state.distCm; // cm
+      const yCm = D * Math.tan(thetaRad); // Vertical spot shift y = D * tan(theta)
+      const yMm = yCm * 10;
+
+      // Triangulated angle reconstruction
+      const calcRad = Math.atan2(yCm, D);
+      const calcDeg = (calcRad * 180) / Math.PI;
+
+      // Optical slant path length z = sqrt(D^2 + y^2)
+      const slantZCm = Math.sqrt(D * D + yCm * yCm);
+
+      // Gaussian beam divergence:
+      // w0 in cm, Rayleigh range z_R = pi * w0^2 / lambda
+      const w0Cm = state.waistMm / 10;
+      const zRCm = (Math.PI * w0Cm * w0Cm) / LAMBDA_CM;
+      const wzCm = w0Cm * Math.sqrt(1 + Math.pow(slantZCm / zRCm, 2));
+      const wzMm = wzCm * 10;
+
+      // 3D Anatomical Coordinates (in cm) with joint center B at origin (0, 0, 0)
+      // Proximal landmark A is vertically above B: (0, L, 0)
+      // At theta = 0° (neutral 90° right-angle bend or reference horizontal), distal C is at (L, 0, 0)
+      // Flexing upward by theta rotates C by +theta above horizontal: (L*cos(theta), L*sin(theta), 0)
+      const Ax = 0.0, Ay = SEGMENT_LEN_CM, Az = 0.0;
+      const Bx = 0.0, By = 0.0, Bz = 0.0;
+      const Cx = SEGMENT_LEN_CM * Math.cos(thetaRad);
+      const Cy = SEGMENT_LEN_CM * Math.sin(thetaRad);
+      const Cz = 0.0;
+
+      // Vectors BA = A - B and BC = C - B
+      const BAx = Ax - Bx, BAy = Ay - By;
+      const BCx = Cx - Bx, BCy = Cy - By;
+      const dotProd = BAx * BCx + BAy * BCy;
+      const magBA = Math.hypot(BAx, BAy);
+      const magBC = Math.hypot(BCx, BCy);
+      const cosInc = Math.max(-1, Math.min(1, dotProd / (magBA * magBC)));
+      const includedDeg = (Math.acos(cosInc) * 180) / Math.PI;
+      const flexionFromNeutralDeg = 90.0 - includedDeg;
+
+      return {
+        thetaRad,
+        D,
+        yCm,
+        yMm,
+        calcDeg,
+        slantZCm,
+        zRCm,
+        wzMm,
+        A: { x: Ax, y: Ay, z: Az },
+        B: { x: Bx, y: By, z: Bz },
+        C: { x: Cx, y: Cy, z: Cz },
+        includedDeg,
+        flexionFromNeutralDeg
+      };
+    }
+
+    // =========================================================================
+    // UI & TELEMETRY UPDATES
+    // =========================================================================
+    function updateTelemetryUI(phys) {
+      document.getElementById('valTheta').textContent = `${state.thetaDeg.toFixed(1)}°`;
+      document.getElementById('valDist').textContent = `${state.distCm.toFixed(0)} cm (${(state.distCm / 100).toFixed(2)} m)`;
+      document.getElementById('valWaist').textContent = `${state.waistMm.toFixed(2)} mm`;
+
+      document.getElementById('readoutShiftCm').textContent = `${phys.yCm.toFixed(2)} cm`;
+      document.getElementById('readoutShiftMm').textContent = `${phys.yMm.toFixed(1)} mm`;
+      document.getElementById('readoutCalcAngle').textContent = `${phys.calcDeg.toFixed(2)}°`;
+      document.getElementById('readoutSlantZ').textContent = `${phys.slantZCm.toFixed(2)} cm`;
+      document.getElementById('readoutSpotRadius').textContent = `${phys.wzMm.toFixed(2)} mm`;
+      document.getElementById('readoutRayleigh').innerHTML = `z<sub>R</sub> = ${phys.zRCm.toFixed(1)} cm`;
+
+      document.getElementById('readoutIncludedAngle').textContent = `Included: ${phys.includedDeg.toFixed(1)}°`;
+      document.getElementById('readoutCoords').textContent =
+        `A(${phys.A.x.toFixed(1)}, ${phys.A.y.toFixed(1)}, 0) • B(0.0, 0.0, 0) • C(${phys.C.x.toFixed(1)}, ${phys.C.y.toFixed(1)}, 0) cm`;
+      document.getElementById('readoutDotFormula').innerHTML =
+        `&theta;<sub>flex</sub> = 90° &minus; cos<sup>&minus;1</sup>[(BA&middot;BC)/(|BA||BC|)] = ${phys.flexionFromNeutralDeg.toFixed(2)}°`;
+
+      // Highlight active preset button
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        const val = parseFloat(btn.textContent);
+        if (Math.abs(val - state.thetaDeg) < 0.05) {
+          btn.classList.remove('bg-slate-100', 'text-slate-700');
+          btn.classList.add('bg-teal-600', 'text-white');
+        } else {
+          btn.classList.add('bg-slate-100', 'text-slate-700');
+          btn.classList.remove('bg-teal-600', 'text-white');
+        }
+      });
+    }
+
+    function onParamChange() {
+      state.thetaDeg = parseFloat(document.getElementById('sliderTheta').value);
+      state.distCm = parseFloat(document.getElementById('sliderDist').value);
+      state.waistMm = parseFloat(document.getElementById('sliderWaist').value);
+      state.centroidCorrection = document.getElementById('toggleCentroid').checked;
+      drawSimulation();
+    }
+
+    function setThetaPreset(deg) {
+      state.autoSweep = false;
+      updateSweepButtonUI();
+      state.thetaDeg = deg;
+      document.getElementById('sliderTheta').value = deg;
+      drawSimulation();
+    }
+
+    function setJointMode(mode) {
+      state.jointMode = mode;
+      const btnElbow = document.getElementById('btnElbowMode');
+      const btnKnee = document.getElementById('btnKneeMode');
+      if (mode === 'elbow') {
+        btnElbow.className = 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-teal-600 text-white shadow-sm';
+        btnKnee.className = 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white hover:bg-slate-800';
+      } else {
+        btnKnee.className = 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-teal-600 text-white shadow-sm';
+        btnElbow.className = 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white hover:bg-slate-800';
+      }
+      drawSimulation();
+    }
+
+    function toggleAutoSweep() {
+      state.autoSweep = !state.autoSweep;
+      updateSweepButtonUI();
+      if (state.autoSweep) {
+        state.lastFrameTime = performance.now();
+        requestAnimationFrame(animationLoop);
+      }
+    }
+
+    function updateSweepButtonUI() {
+      const playIcon = document.getElementById('sweepIconPlay');
+      const pauseIcon = document.getElementById('sweepIconPause');
+      const label = document.getElementById('sweepLabel');
+      if (state.autoSweep) {
+        playIcon.classList.add('hidden');
+        pauseIcon.classList.remove('hidden');
+        label.textContent = 'Pause Sweep';
+      } else {
+        playIcon.classList.remove('hidden');
+        pauseIcon.classList.add('hidden');
+        label.textContent = 'Auto-Flexion Sweep';
+      }
+    }
+
+    function animationLoop(now) {
+      if (!state.autoSweep) return;
+      const dt = Math.min(0.05, (now - state.lastFrameTime) / 1000);
+      state.lastFrameTime = now;
+
+      state.thetaDeg += state.sweepDir * 7.5 * dt; // 7.5 deg/sec smooth oscillation
+      if (state.thetaDeg >= 22) {
+        state.thetaDeg = 22;
+        state.sweepDir = -1;
+      } else if (state.thetaDeg <= 0) {
+        state.thetaDeg = 0;
+        state.sweepDir = 1;
+      }
+      document.getElementById('sliderTheta').value = state.thetaDeg.toFixed(1);
+      drawSimulation();
+      requestAnimationFrame(animationLoop);
+    }
+
+    // =========================================================================
+    // HIGH-PRECISION 60FPS HTML5 CANVAS RENDERING
+    // =========================================================================
+    function resizeCanvas() {
+      const rect = canvasWrapper.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(300, Math.floor(rect.width * dpr));
+      canvas.height = Math.max(300, Math.floor(rect.height * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawSimulation();
+    }
+
+    function drawSimulation() {
+      state.centroidCorrection = document.getElementById('toggleCentroid').checked;
+      const phys = computePhysics();
+      updateTelemetryUI(phys);
+
+      const width = canvasWrapper.clientWidth;
+      const height = canvasWrapper.clientHeight;
+      if (width <= 0 || height <= 0) return;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Background blueprint grid
+      ctx.fillStyle = '#070f1d';
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+      ctx.lineWidth = 1;
+      const bgGrid = 24;
+      for (let x = 0; x < width; x += bgGrid) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < height; y += bgGrid) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+
+      // Split layout: Left 68% = Optical Bench Side View, Right 32% = Zoomed Millimeter Target View
+      const splitX = width < 640 ? width : Math.floor(width * 0.67);
+      const benchW = splitX;
+      const benchH = width < 640 ? Math.floor(height * 0.62) : height;
+
+      drawOpticalBench(0, 0, benchW, benchH, phys);
+
+      if (width < 640) {
+        drawZoomedGridView(0, benchH, width, height - benchH, phys);
+      } else {
+        drawZoomedGridView(splitX, 0, width - splitX, height, phys);
+      }
+    }
+
+    function drawOpticalBench(ox, oy, w, h, phys) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(ox, oy, w, h);
+      ctx.clip();
+
+      const labels = state.jointMode === 'elbow'
+        ? { A: 'Shoulder (A)', B: 'Elbow Pivot (B)', C: 'Wrist (C)', prox: 'Upper Arm', dist: 'Forearm Flexure' }
+        : { A: 'Hip (A)', B: 'Knee Pivot (B)', C: 'Ankle (C)', prox: 'Thigh Segment', dist: 'Lower Leg Flexure' };
+
+      // Bench surface baseline
+      const tableY = oy + h - 46;
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(ox, tableY, w, 46);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(ox, tableY);
+      ctx.lineTo(ox + w, tableY);
+      ctx.stroke();
+
+      // Pillar & Pivot coordinates
+      const pillarX = ox + Math.max(75, w * 0.17);
+      const pillarBaseY = tableY;
+      const pivotY = oy + h * 0.56;
+      const landmarkAY = Math.max(oy + 52, pivotY - Math.min(115, h * 0.27));
+      state.pivotPx = { x: pillarX, y: pivotY };
+
+      // Vertical Support Pillar (Proximal Segment A-B)
+      const pillarW = 24;
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(pillarX - pillarW / 2, landmarkAY - 14, pillarW, pillarBaseY - (landmarkAY - 14), [8, 8, 0, 0]);
+      ctx.fill();
+      ctx.stroke();
+
+      // Base mounting bracket
+      ctx.fillStyle = '#334155';
+      ctx.beginPath();
+      ctx.roundRect(pillarX - 36, pillarBaseY - 10, 72, 10, [4, 4, 0, 0]);
+      ctx.fill();
+
+      // Proximal Anatomical Line (A to B)
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(pillarX, landmarkAY);
+      ctx.lineTo(pillarX, pivotY);
+      ctx.stroke();
+
+      // Landmark A node
+      drawLandmarkNode(pillarX, landmarkAY, labels.A, 'left');
+
+      // Precision Protractor Arc centered at Pivot B
+      const protRadius = Math.min(88, w * 0.14);
+      ctx.save();
+      ctx.translate(pillarX, pivotY);
+      ctx.fillStyle = 'rgba(20, 184, 166, 0.08)';
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, protRadius, -Math.PI * 0.35, Math.PI * 0.15);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Protractor tick marks every 5 degrees
+      for (let deg = -30; deg <= 30; deg += 5) {
+        const rad = (-deg * Math.PI) / 180;
+        const innerR = deg % 10 === 0 ? protRadius - 10 : protRadius - 5;
+        ctx.strokeStyle = deg === 0 ? '#2dd4bf' : 'rgba(148, 163, 184, 0.5)';
+        ctx.lineWidth = deg === 0 ? 1.5 : 1;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(rad) * innerR, Math.sin(rad) * innerR);
+        ctx.lineTo(Math.cos(rad) * protRadius, Math.sin(rad) * protRadius);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Calculate Screen X position mapped smoothly from D (50..150 cm)
+      const minScreenX = pillarX + Math.max(150, w * 0.36);
+      const maxScreenX = ox + w - 58;
+      const distNorm = (state.distCm - 50) / 100; // 0..1
+      const screenX = minScreenX + distNorm * Math.max(40, maxScreenX - minScreenX);
+
+      // Horizontal Optical Reference Axis (theta = 0° line)
+      ctx.save();
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+      ctx.setLineDash([5, 5]);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(pillarX, pivotY);
+      ctx.lineTo(screenX, pivotY);
+      ctx.stroke();
+      ctx.restore();
+
+      // Flexure Arm (B to C) rotated upward by +thetaDeg
+      const armLenPx = Math.min(115, (minScreenX - pillarX) * 0.56);
+      const armAngleRad = -phys.thetaRad; // Canvas Y goes down, so upward tilt is negative angle
+      const wristX = pillarX + Math.cos(armAngleRad) * armLenPx;
+      const wristY = pivotY + Math.sin(armAngleRad) * armLenPx;
+
+      // Draw Flexure Arm Bar
+      ctx.save();
+      ctx.translate(pillarX, pivotY);
+      ctx.rotate(armAngleRad);
+
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#2dd4bf';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-10, -9, armLenPx + 20, 18, 9);
+      ctx.fill();
+      ctx.stroke();
+
+      // Mounted 650 nm Red Laser Emitter Module on top of flexure arm
+      const laserStart = 24;
+      const laserLen = Math.max(44, armLenPx * 0.48);
+      ctx.fillStyle = '#334155';
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.roundRect(laserStart, -18, laserLen, 10, 3);
+      ctx.fill();
+      ctx.stroke();
+
+      // Laser Aperture Tip
+      const apertureLocalX = laserStart + laserLen;
+      const apertureLocalY = -13;
+      ctx.fillStyle = '#f43f5e';
+      ctx.fillRect(apertureLocalX, apertureLocalY - 3, 4, 6);
+      ctx.restore();
+
+      // Compute exact world coordinates of laser aperture
+      const apertureWorldX = pillarX + apertureLocalX * Math.cos(armAngleRad) - apertureLocalY * Math.sin(armAngleRad);
+      const apertureWorldY = pivotY + apertureLocalX * Math.sin(armAngleRad) + apertureLocalY * Math.cos(armAngleRad);
+
+      // Compute beam intersection with vertical target screen at screenX
+      // Beam direction is (cos(armAngleRad), sin(armAngleRad))
+      const dxToScreen = screenX - apertureWorldX;
+      const hitScreenY = apertureWorldY + dxToScreen * Math.tan(armAngleRad);
+      const zeroAxisScreenY = pivotY + (screenX - (pillarX + apertureLocalX)) * 0 - 13; // Reference y=0 spot height
+
+      // Draw Vertical Target Screen Stand
+      const screenTopY = oy + 34;
+      const screenBottomY = tableY;
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(screenX, screenTopY, 12, screenBottomY - screenTopY, [4, 4, 0, 0]);
+      ctx.fill();
+      ctx.stroke();
+
+      // Screen Foot
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(screenX - 18, tableY - 8, 44, 8);
+
+      // Screen Label
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '600 11px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Grid Screen', screenX + 6, screenTopY - 10);
+
+      // Draw Glowing 650 nm Laser Beam from Aperture to Screen
+      ctx.save();
+      ctx.strokeStyle = 'rgba(244, 63, 94, 0.28)';
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.moveTo(apertureWorldX, apertureWorldY);
+      ctx.lineTo(screenX, hitScreenY);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#ff2a55';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(apertureWorldX, apertureWorldY);
+      ctx.lineTo(screenX, hitScreenY);
+      ctx.stroke();
+      ctx.restore();
+
+      // Glowing Spot on Side-View Screen
+      const spotGlow = ctx.createRadialGradient(screenX, hitScreenY, 1, screenX, hitScreenY, 12);
+      spotGlow.addColorStop(0, '#ffffff');
+      spotGlow.addColorStop(0.35, '#f43f5e');
+      spotGlow.addColorStop(1, 'rgba(244, 63, 94, 0)');
+      ctx.fillStyle = spotGlow;
+      ctx.beginPath();
+      ctx.arc(screenX, hitScreenY, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Landmark B (Pivot) & Landmark C (Distal)
+      drawLandmarkNode(pillarX, pivotY, labels.B, 'bottom');
+      drawLandmarkNode(wristX, wristY, labels.C, 'top');
+
+      // Shaded Angle Wedge for theta
+      if (state.thetaDeg > 0.2) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(45, 212, 191, 0.22)';
+        ctx.strokeStyle = '#2dd4bf';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(pillarX, pivotY);
+        ctx.arc(pillarX, pivotY, 48, armAngleRad, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#5eead4';
+        ctx.font = '700 12px JetBrains Mono, monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(`θ = ${state.thetaDeg.toFixed(1)}°`, pillarX + 54, pivotY - 8);
+        ctx.restore();
+      }
+
+      // Dimension Line: Screen Distance D along bottom
+      const dimY = tableY + 22;
+      drawDimensionArrow(pillarX, dimY, screenX, dimY, `D = ${state.distCm.toFixed(0)} cm (${(state.distCm / 100).toFixed(2)} m)`, '#38bdf8');
+
+      // Dimension Line: Vertical Spot Shift y along right side of screen
+      if (Math.abs(zeroAxisScreenY - hitScreenY) > 4) {
+        const shiftDimX = screenX + 26;
+        ctx.save();
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(screenX, zeroAxisScreenY);
+        ctx.lineTo(shiftDimX + 6, zeroAxisScreenY);
+        ctx.moveTo(screenX, hitScreenY);
+        ctx.lineTo(shiftDimX + 6, hitScreenY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.beginPath();
+        ctx.moveTo(shiftDimX, zeroAxisScreenY);
+        ctx.lineTo(shiftDimX, hitScreenY);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Top-left Bench Status Overlay Badge
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+      ctx.strokeStyle = 'rgba(51, 65, 85, 0.9)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(ox + 12, oy + 12, 224, 44, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '600 10px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('OPTICAL BENCH SIDE-VIEW SCHEMATIC', ox + 22, oy + 28);
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '600 11px JetBrains Mono, monospace';
+      ctx.fillText(`y = ${phys.yCm.toFixed(2)} cm  |  z = ${phys.slantZCm.toFixed(2)} cm`, ox + 22, oy + 45);
+
+      ctx.restore();
+    }
+
+    function drawZoomedGridView(ox, oy, w, h, phys) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(ox, oy, w, h);
+      ctx.clip();
+
+      // Panel divider border
+      ctx.fillStyle = '#091324';
+      ctx.fillRect(ox, oy, w, h);
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.lineTo(ox, oy + h);
+      ctx.stroke();
+
+      // Header inside Zoomed Target View
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '700 11px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('ZOOMED MILLIMETER GRID TARGET', ox + w / 2, oy + 22);
+
+      // Grid Box Area
+      const padX = 28;
+      const topY = oy + 36;
+      const botY = oy + h - 42;
+      const gridW = Math.max(100, w - padX * 2);
+      const gridH = Math.max(100, botY - topY);
+      const gridLeft = ox + padX;
+
+      // Crisp scientific millimeter graph paper surface
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.roundRect(gridLeft, topY, gridW, gridH, 8);
+      ctx.fill();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(gridLeft, topY, gridW, gridH, 8);
+      ctx.clip();
+
+      // Scale: represent -5 cm to +45 cm vertically (total 50 cm span = 500 mm)
+      const totalSpanCm = 50;
+      const pxPerCm = gridH / totalSpanCm;
+      const pxPerMm = pxPerCm / 10;
+      const originY = topY + gridH - 5 * pxPerCm; // y = 0 cm baseline near bottom
+      const centerX = gridLeft + gridW / 2;
+
+      // Draw 2 mm minor grid lines & 10 mm (1 cm) major grid lines
+      const stepPx = pxPerMm >= 2.2 ? pxPerMm * 2 : pxPerCm / 2;
+      ctx.strokeStyle = 'rgba(13, 148, 136, 0.14)';
+      ctx.lineWidth = 0.7;
+      for (let gx = centerX; gx <= gridLeft + gridW; gx += stepPx) {
+        ctx.beginPath(); ctx.moveTo(gx, topY); ctx.lineTo(gx, topY + gridH); ctx.stroke();
+      }
+      for (let gx = centerX; gx >= gridLeft; gx -= stepPx) {
+        ctx.beginPath(); ctx.moveTo(gx, topY); ctx.lineTo(gx, topY + gridH); ctx.stroke();
+      }
+      for (let gy = originY; gy >= topY; gy -= stepPx) {
+        ctx.beginPath(); ctx.moveTo(gridLeft, gy); ctx.lineTo(gridLeft + gridW, gy); ctx.stroke();
+      }
+      for (let gy = originY; gy <= topY + gridH; gy += stepPx) {
+        ctx.beginPath(); ctx.moveTo(gridLeft, gy); ctx.lineTo(gridLeft + gridW, gy); ctx.stroke();
+      }
+
+      // Major 5 cm horizontal ruling lines + labels
+      ctx.strokeStyle = 'rgba(13, 148, 136, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.fillStyle = '#475569';
+      ctx.font = '600 9px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      for (let cm = 0; cm <= 40; cm += 5) {
+        const lineY = originY - cm * pxPerCm;
+        ctx.beginPath();
+        ctx.moveTo(gridLeft, lineY);
+        ctx.lineTo(gridLeft + gridW, lineY);
+        ctx.stroke();
+        if (cm > 0) {
+          ctx.fillText(`+${cm}cm`, gridLeft + 5, lineY - 2);
+        }
+      }
+
+      // Origin Crosshair (y = 0 at theta = 0°)
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(gridLeft, originY);
+      ctx.lineTo(gridLeft + gridW, originY);
+      ctx.moveTo(centerX, topY);
+      ctx.lineTo(centerX, topY + gridH);
+      ctx.stroke();
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = '700 9px JetBrains Mono, monospace';
+      ctx.fillText('y = 0 (θ=0°)', gridLeft + 5, originY + 11);
+
+      // Live Laser Spot Position on Grid
+      const spotY = originY - phys.yCm * pxPerCm;
+
+      // Vertical displacement bracket from y=0 to spotY
+      if (phys.yCm > 0.3) {
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(centerX + 26, originY);
+        ctx.lineTo(centerX + 26, spotY);
+        ctx.stroke();
+
+        ctx.fillStyle = '#0369a1';
+        ctx.font = '700 10px JetBrains Mono, monospace';
+        ctx.fillText(`y=${phys.yCm.toFixed(1)}cm`, centerX + 31, (originY + spotY) / 2 + 3);
+      }
+
+      // Visual Gaussian Spot Radius (magnified cleanly so user sees divergence expansion)
+      const visualRadiusPx = Math.max(7, phys.wzMm * 14.5);
+      const grad = ctx.createRadialGradient(centerX, spotY, 1, centerX, spotY, visualRadiusPx);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.25, '#ff1e42');
+      grad.addColorStop(0.7, 'rgba(244, 63, 94, 0.55)');
+      grad.addColorStop(1, 'rgba(244, 63, 94, 0)');
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(centerX, spotY, visualRadiusPx, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 1/e^2 Beam Waist Boundary Ring w(z)
+      ctx.strokeStyle = '#be123c';
+      ctx.lineWidth = 1.3;
+      ctx.setLineDash([3, 2]);
+      ctx.beginPath();
+      ctx.arc(centerX, spotY, visualRadiusPx * 0.72, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Centroid Divergence Correction Crosshair
+      if (state.centroidCorrection) {
+        ctx.strokeStyle = '#0d9488';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(centerX - 14, spotY);
+        ctx.lineTo(centerX + 14, spotY);
+        ctx.moveTo(centerX, spotY - 14);
+        ctx.lineTo(centerX, spotY + 14);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+
+      // Bottom Caption inside Zoomed Target View
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '500 10px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(
+        state.centroidCorrection
+          ? `Centroid Lock ON • Spot Radius w(z) = ${phys.wzMm.toFixed(2)} mm`
+          : `Centroid Lock OFF • Spot Radius w(z) = ${phys.wzMm.toFixed(2)} mm`,
+        ox + w / 2,
+        oy + h - 16
+      );
+
+      ctx.restore();
+    }
+
+    function drawLandmarkNode(x, y, label, pos) {
+      ctx.save();
+      ctx.fillStyle = '#f59e0b';
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#fef3c7';
+      ctx.font = '600 11px Inter, sans-serif';
+      if (pos === 'left') {
+        ctx.textAlign = 'right';
+        ctx.fillText(label, x - 12, y + 4);
+      } else if (pos === 'top') {
+        ctx.textAlign = 'center';
+        ctx.fillText(label, x, y - 14);
+      } else {
+        ctx.textAlign = 'center';
+        ctx.fillText(label, x, y + 20);
+      }
+      ctx.restore();
+    }
+
+    function drawDimensionArrow(x1, y1, x2, y2, text, color) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 1.4;
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      // Left arrowhead
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x1 + 7, y1 - 3.5);
+      ctx.lineTo(x1 + 7, y1 + 3.5);
+      ctx.closePath();
+      ctx.fill();
+
+      // Right arrowhead
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - 7, y2 - 3.5);
+      ctx.lineTo(x2 - 7, y2 + 3.5);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.font = '600 11px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(text, (x1 + x2) / 2, y1 - 6);
+      ctx.restore();
+    }
+
+    // =========================================================================
+    // DIRECT POINTER / TOUCH DRAGGING ON FLEXURE ARM
+    // =========================================================================
+    function updateAngleFromPointer(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const px = clientX - rect.left;
+      const py = clientY - rect.top;
+      const dx = px - state.pivotPx.x;
+      const dy = state.pivotPx.y - py; // Positive upward
+      if (dx > 10) {
+        let deg = (Math.atan2(dy, dx) * 180) / Math.PI;
+        deg = Math.max(0, Math.min(25, Math.round(deg * 2) / 2));
+        state.thetaDeg = deg;
+        document.getElementById('sliderTheta').value = deg;
+        drawSimulation();
+      }
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      state.autoSweep = false;
+      updateSweepButtonUI();
+      state.isDraggingArm = true;
+      canvas.classList.replace('canvas-grab', 'canvas-grabbing');
+      updateAngleFromPointer(e.clientX, e.clientY);
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!state.isDraggingArm) return;
+      updateAngleFromPointer(e.clientX, e.clientY);
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (state.isDraggingArm) {
+        state.isDraggingArm = false;
+        canvas.classList.replace('canvas-grabbing', 'canvas-grab');
+      }
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 0) {
+        state.autoSweep = false;
+        updateSweepButtonUI();
+        state.isDraggingArm = true;
+        updateAngleFromPointer(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    canvas.addEventListener('touchmove', (e) => {
+      if (!state.isDraggingArm || e.touches.length === 0) return;
+      updateAngleFromPointer(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+
+    canvas.addEventListener('touchend', () => {
+      state.isDraggingArm = false;
+    });
+
+    // =========================================================================
+    // EXPERIMENTAL DATA LOGGER & TABS
+    // =========================================================================
+    function switchTab(tabIndex) {
+      for (let i = 1; i <= 3; i++) {
+        const btn = document.getElementById(`tabBtn${i}`);
+        const panel = document.getElementById(`tabPanel${i}`);
+        if (i === tabIndex) {
+          btn.className = 'px-4 py-2 rounded-t-xl text-xs sm:text-sm font-bold border-t border-x border-slate-200 bg-white text-teal-700 -mb-px transition-colors';
+          panel.classList.remove('hidden');
+        } else {
+          btn.className = 'px-4 py-2 rounded-t-xl text-xs sm:text-sm font-semibold border-t border-x border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors';
+          panel.classList.add('hidden');
+        }
+      }
+      document.getElementById('loggerActions').style.display = tabIndex === 1 ? 'flex' : 'none';
+    }
+
+    function recordCurrentTrial() {
+      const phys = computePhysics();
+      const diff = Math.abs(phys.calcDeg - state.thetaDeg);
+      state.trials.push({
+        mode: state.jointMode === 'elbow' ? 'Elbow' : 'Knee',
+        refDeg: state.thetaDeg.toFixed(1),
+        distCm: state.distCm.toFixed(0),
+        shiftCm: phys.yCm.toFixed(2),
+        spotMm: phys.wzMm.toFixed(2),
+        calcDeg: phys.calcDeg.toFixed(2),
+        diffDeg: diff.toFixed(2)
+      });
+      renderTrialsTable();
+      showToast(`Recorded Trial #${state.trials.length} (${state.thetaDeg.toFixed(1)}°)`);
+    }
+
+    function loadSampleCalibrationTrials() {
+      const presets = [0, 5, 10, 15];
+      state.trials = presets.map(deg => {
+        const rad = (deg * Math.PI) / 180;
+        const D = 100;
+        const y = D * Math.tan(rad);
+        const z = Math.sqrt(D * D + y * y);
+        const w0 = 0.08; // cm
+        const zR = (Math.PI * w0 * w0) / LAMBDA_CM;
+        const wzMm = (w0 * Math.sqrt(1 + Math.pow(z / zR, 2))) * 10;
+        const calc = (Math.atan2(y, D) * 180) / Math.PI;
+        return {
+          mode: state.jointMode === 'elbow' ? 'Elbow' : 'Knee',
+          refDeg: deg.toFixed(1),
+          distCm: '100',
+          shiftCm: y.toFixed(2),
+          spotMm: wzMm.toFixed(2),
+          calcDeg: calc.toFixed(2),
+          diffDeg: Math.abs(calc - deg).toFixed(2)
+        };
+      });
+      renderTrialsTable();
+      showToast('Loaded 4 calibration trials at D = 100 cm');
+    }
+
+    function clearTrials() {
+      state.trials = [];
+      renderTrialsTable();
+      showToast('Cleared experimental data table');
+    }
+
+    function renderTrialsTable() {
+      const tbody = document.getElementById('trialsTbody');
+      if (state.trials.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="py-5 px-4 text-center font-sans text-slate-400">
+              No trials recorded yet. Adjust the joint angle and click <strong>+ Record Trial</strong> to log readings.
+            </td>
+          </tr>`;
+        return;
+      }
+      tbody.innerHTML = state.trials.map((t, idx) => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="py-2 px-3 font-bold text-slate-800">${idx + 1}</td>
+          <td class="py-2 px-3 font-sans font-semibold text-teal-700">${t.mode}</td>
+          <td class="py-2 px-3">${t.refDeg}°</td>
+          <td class="py-2 px-3">${t.distCm} cm</td>
+          <td class="py-2 px-3 font-semibold text-slate-900">${t.shiftCm} cm</td>
+          <td class="py-2 px-3 text-rose-600">${t.spotMm} mm</td>
+          <td class="py-2 px-3 font-bold text-teal-700">${t.calcDeg}°</td>
+          <td class="py-2 px-3 text-slate-500">${t.diffDeg}°</td>
+        </tr>
+      `).join('');
+    }
+
+    function copyTableToClipboard() {
+      if (state.trials.length === 0) {
+        showToast('Record at least one trial before copying');
+        return;
+      }
+      const header = 'Trial\tJoint\tReference Angle (°)\tDistance D (cm)\tSpot Shift y (cm)\tSpot Radius w(z) (mm)\tComputed Angle (°)\tDifference (°)';
+      const rows = state.trials.map((t, i) =>
+        `${i + 1}\t${t.mode}\t${t.refDeg}\t${t.distCm}\t${t.shiftCm}\t${t.spotMm}\t${t.calcDeg}\t${t.diffDeg}`
+      );
+      const text = [header, ...rows].join('\n');
+
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast('Copied experimental table to clipboard for your report!');
+      } catch (err) {
+        showToast('Unable to copy automatically');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      document.getElementById('toastMessage').textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        banner.classList.add('hidden');
+      }, 2800);
+    }
+
+    // =========================================================================
+    // INITIALIZATION
+    // =========================================================================
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('load', () => {
+      loadSampleCalibrationTrials();
+      resizeCanvas();
+    });
+  </script>
+</body>
+</html>
